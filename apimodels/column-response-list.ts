@@ -1,0 +1,3 @@
+type ColumnResponseList = {
+    name:string
+}
