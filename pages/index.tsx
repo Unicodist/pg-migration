@@ -1,115 +1,92 @@
+import {useState, useEffect, MouseEventHandler} from "react";
 import {
     Button,
-    Flex,
+    Container,
     FormControl,
     FormLabel,
-    IconButton,
-    Input,
-    InputGroup,
-    InputRightElement,
-    Select, Spacer
+    Stack,
 } from "@chakra-ui/react";
-import {TbPlugConnected} from "react-icons/tb";
-import {FormEvent, useEffect, useState} from "react";
-import {DatabaseResponseList} from "@/apimodels/database-response-list";
-import instance from "@/services/api-service";
-import TableResponseList from "@/apimodels/table-response-list";
-import {useDisclosure} from "@chakra-ui/hooks";
-import RuleAddPopup from "@/components/rule-add-popup";
+import SearchableSelect from "@/components/select/search-select";
+import {useRouter} from "next/router";
 
-export default function Home() {
-    const [databases,setDatabases] = useState<DatabaseResponseList[]>([])
+const Index = () => {
+    const [databases,setDatabases] = useState<string[]>([])
+    const [sourceDb, setSourceDb] = useState<string>("");
+    const [destDb, setDestDb] = useState<string>("");
+    const [sourceTables, setSourceTables] = useState<string[]>([]);
+    const [destTables, setDestTables] = useState<string[]>([]);
+    const [sourceTable, setSourceTable] = useState<string>("");
+    const [destTable, setDestTable] = useState<string>("");
 
-    const [sourceDatabase,setSourceDatabase] = useState<string>('');
-    const [sourceTable,setSourceTable] = useState<string>('');
-    const [destinationTable,setDestinationTable] = useState<string>('');
-    const [destinationDatabase,setDestinationDatabase] = useState<string>('');
+    useEffect(() => {
+        fetch("/api/schema/db")
+            .then((res) => res.json())
+            .then((data) => {
+                setDatabases(data.databases)
+            });
+    }, []);
 
-    const [sourceTables, setSourceTables] = useState<TableResponseList[]>([])
+    useEffect(() => {
+        if (sourceDb) {
+            fetch(`/api/schema/${sourceDb}/tables`)
+                .then((res) => res.json())
+                .then((data) => {
+                    setSourceTables(data.map((table:any)=>table.table_name));
+                });
+        }
+    }, [sourceDb]);
 
-    const [destinationTables, setDestinationTables] = useState<TableResponseList[]>([])
-    const loadDatabases = async () => {
-        const response = await instance.get<DatabaseResponseList[]>('/api/database');
-        setDatabases(response.data)
-    }
-
-    const loadSourceTables = async () => {
-        const response = await instance.get<TableResponseList[]>(`/api/table/${sourceDatabase}`)
-        setSourceTables(response.data)
-    }
-    const loadDestinationTables = async () => {
-        const response = await instance.get<TableResponseList[]>(`/api/table/${destinationDatabase}`)
-        setDestinationTables(response.data)
-    }
-
-    const disclosure = useDisclosure();
-
-    const handleSubmit = (e:FormEvent<HTMLFormElement>) => {
+    useEffect(() => {
+        if (destDb) {
+            fetch(`/api/schema/${destDb}/tables`)
+                .then((res) => res.json())
+                .then((data) => {
+                    setDestTables(data.map((table:any)=>table.table_name));
+                });
+        }
+    }, [destDb]);
+    const router = useRouter()
+    function HandleSubmit(e:any) {
         e.preventDefault()
+        console.log('sir yes sir')
 
-        disclosure.onOpen()
+        router.push({
+            pathname: '/copy/column',
+            query: {
+                srcDb: sourceDb,
+                srcTable: sourceTable,
+                destDb: destDb,
+                destTable: destTable,
+            },
+        }).then(function (q) {
+
+        });
     }
 
-    useEffect(()=>{
-        loadDatabases()
-    },[])
+    return (
+        <Container maxWidth="xl">
+                <Stack h={'100vh'} spacing={4} justifyContent={'center'} alignItems={"center"}>
+                    <FormControl id="source-db" isRequired>
+                        <FormLabel>Source Database</FormLabel>
+                        <SearchableSelect w={'100%'} options={databases} onSelect={setSourceDb} label={'srcdb'}/>
+                    </FormControl>
+                    <FormControl id="source-table" isRequired>
+                        <FormLabel>Source Table</FormLabel>
+                        <SearchableSelect onSelect={setSourceTable} options={sourceTables} label={'srctb'}/>
+                    </FormControl>
+                    <FormControl id="dest-db" isRequired>
+                        <FormLabel>Destination Database</FormLabel>
+                        <SearchableSelect options={databases} onSelect={setDestDb} label={'dstdb'}/>
+                    </FormControl>
+                    <FormControl id="dest-table" isRequired>
+                        <FormLabel>Destination Table</FormLabel>
+                        <SearchableSelect options={destTables} onSelect={setDestTable} label={'dsttb'}/>
+                    </FormControl>
+                    <Button onClick={HandleSubmit}>Next</Button>
+                </Stack>
+        </Container>
+    );
+};
 
-    useEffect(()=>{
-        if (sourceDatabase !== '')
-            loadSourceTables()
-    },[sourceDatabase])
-    useEffect(()=>{
-        if (destinationDatabase !== '')
-            loadDestinationTables()
-    },[destinationDatabase])
-  return (<>
-          <Flex h={'100vh'} justifyContent={'center'} alignItems={'center'}>
-              <Flex p={12} rounded={6} direction={'column'}>
-                  <form onSubmit={(e)=>handleSubmit(e)}>
-                      <Flex direction={'column'} gap={3}>
-                          <FormControl mb={5} as={'fieldset'}>
-                              <FormLabel>Source</FormLabel>
-                              <Select onChange={(e)=>setSourceDatabase(e.target.value)} placeholder={'Choose database'}>
-                                  {
-                                      databases.map((item,key)=>{
-                                          return <option key={key}>{item.name}</option>
-                                      })
-                                  }
-                              </Select>
-                              <Spacer height={3}/>
-                              <Select hidden={sourceDatabase ===''} placeholder={'Choose table'} onChange={(e)=>setSourceTable(e.target.value)}>
-                                  {
-                                      sourceTables.map((item,key)=>{
-                                          return <option key={key}>{item.name}</option>
-                                      })
-                                  }
-                              </Select>
-                          </FormControl>
-                          <FormControl as={'fieldset'}>
-                              <FormLabel>Destination</FormLabel>
-                              <Select onChange={(e)=>setDestinationDatabase(e.target.value)} placeholder={'Choose destination database'}>
-                                  {
-                                      databases.map((item,key)=>{
-                                          return <option key={key}>{item.name}</option>
-                                      })
-                                  }
-                              </Select>
-                              <Spacer height={3}/>
-                              <Select hidden={destinationDatabase === ''} placeholder={'Choose table'} onChange={(e)=>setDestinationTable(e.target.value)}>
-                                  {
-                                      destinationTables.map((item,key)=>{
-                                          return <option key={key}>{item.name}</option>
-                                      })
-                                  }
-                              </Select>
-                          </FormControl>
-                          <Button type={'submit'}>GO!</Button>
-                      </Flex>
-                  </form>
-              </Flex>
-          </Flex>
-          <RuleAddPopup sourceDb={sourceDatabase} sourceTb={sourceTable} destinationDb={destinationDatabase} destinationTb={destinationTable} disclosure={disclosure}/>
-      </>
+export default Index;
 
-  )
-}
