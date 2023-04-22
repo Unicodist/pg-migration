@@ -8,6 +8,7 @@ import {
 } from "@chakra-ui/react";
 import SearchableSelect from "@/components/select/search-select";
 import {useRouter} from "next/router";
+import {table} from "@/backend/entities";
 
 const Index = () => {
     const [databases,setDatabases] = useState<string[]>([])
@@ -31,7 +32,7 @@ const Index = () => {
             fetch(`/api/schema/${sourceDb}/tables`)
                 .then((res) => res.json())
                 .then((data) => {
-                    setSourceTables(data.map((table:any)=>table.table_name));
+                    setSourceTables(data.map((table:table)=>`${table.table_schema}.${table.table_name}`));
                 });
         }
     }, [sourceDb]);

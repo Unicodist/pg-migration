@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    Box,
-    Button,
-    FormControl,
-    FormLabel, IconButton,
-    Input,
-    Select, Stack, Textarea,
+    Box, Stack,
 } from '@chakra-ui/react';
 import {useRouter} from "next/router";
 import ColForm from "@/components/col-form/col-form";

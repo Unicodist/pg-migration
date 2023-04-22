@@ -4,13 +4,14 @@ import {useEffect, useState} from "react";
 import CommandModel, {ColumnModel} from "@/types/command-model";
 import {BiPlus} from "react-icons/bi";
 import {generateCopyCommand} from "@/helpers/command-helper";
+import {column} from "@/backend/entities";
 
 type ColFormProps = { srcDb:string, srctable:string, dstDb:string, desttable:string }
 
 function ColForm(props: ColFormProps) {
 
-    const[dstDbCols,setDstDbCols] = useState<any[]>([]);
-    const [srcCols,setSrcCols] = useState<any[]>([]);
+    const[dstDbCols,setDstDbCols] = useState<column[]>([]);
+    const [srcCols,setSrcCols] = useState<column[]>([]);
     const [currentCol,setCurrentCol] = useState<ColumnModel>({colname: "", srctype: "column", value: ""});
     const [command, setCommand] = useState<CommandModel>({cols: [], srcTable: ''})
 
@@ -23,7 +24,7 @@ function ColForm(props: ColFormProps) {
                 })
             fetch(`/api/schema/${props.dstDb}/${props.desttable}/columns`)
                 .then((res) => res.json())
-                .then(function (response) {
+                .then(function (response:column[]) {
                     setDstDbCols(response)
                 })
             setCommand({...command,srcTable:props.srctable})
@@ -40,7 +41,7 @@ function ColForm(props: ColFormProps) {
     return (
         <>
             <InputGroup flexDirection={'row'} gap={'10px'}>
-                <SearchableSelect options={dstDbCols?.map((col)=>col.colname)} onSelect={(e) => setCurrentCol({...currentCol, colname: e})} label={'newColName'}/>
+                <SearchableSelect options={dstDbCols?.map((col)=>col.column_name)} onSelect={(e) => setCurrentCol({...currentCol, colname: e})} label={'newColName'}/>
                 <Select onChange={(e)=>setCurrentCol({...currentCol,srctype:e.target.value})}>
                     <option value="column">Column</option>
                     <option value="constant">Constant</option>
@@ -49,8 +50,7 @@ function ColForm(props: ColFormProps) {
                 {
                     currentCol.srctype === 'query' || currentCol.srctype === 'constant'
                         ? <Input onChange={(e)=>setCurrentCol({...currentCol,value:e.target.value})}/>
-                        : <SearchableSelect options={srcCols?.map((col)=>col.colname)} onSelect={o=>setCurrentCol( {...currentCol,value:o})} label={'column'}/>
-
+                        : <SearchableSelect options={srcCols?.map((col)=>col.column_name)} onSelect={o=>setCurrentCol( {...currentCol,value:o})} label={'column'}/>
                 }
                 <IconButton aria-label={'add rule'} icon={<BiPlus/>} onClick={handleAdd}/>
             </InputGroup>
